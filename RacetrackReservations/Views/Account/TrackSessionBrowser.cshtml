@@ -1,0 +1,352 @@
+﻿@model List<TrackSession>
+
+@{
+    ViewBag.Title = "Track Session Browser";
+}
+
+<style>
+    .session-row {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 20px;
+    }
+
+        .session-row th,
+        .session-row td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        .session-row th {
+            background-color: #f2f2f2;
+        }
+
+    .date-picker {
+        display: inline-block;
+        position: relative;
+    }
+
+        .date-picker input {
+            padding: 5px;
+        }
+
+    .date-picker-header {
+        text-align: center;
+        padding: 10px;
+        background-color: #f2f2f2;
+    }
+
+    .month-navigation {
+        display: flex;
+        justify-content: space-between;
+        margin: 10px 0;
+    }
+
+        .month-navigation button {
+            margin: 0 5px;
+        }
+
+    #calendar {
+        display: none;
+        position: absolute;
+        background-color: #fff;
+        box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+        z-index: 1;
+    }
+
+        #calendar table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #calendar th, #calendar td {
+            border: 1px solid #dddddd;
+            text-align: center;
+            padding: 8px;
+        }
+
+        #calendar th {
+            background-color: #f2f2f2;
+        }
+
+        #calendar td:hover {
+            background-color: #e6e6e6;
+            cursor: pointer;
+        }
+
+    .disabled {
+        color: #a0a0a0;
+        pointer-events: none;
+        background-color: #f2f2f2;
+    }
+
+    .month-year-display {
+        font-weight: bold;
+    }
+
+    .day-name {
+        text-align: center;
+        font-weight: bold;
+    }
+</style>
+
+<h2>Track Session Browser</h2>
+<br />
+
+<div class="date-picker">
+    <div class="date-picker-header">
+        <div class="month-year-display" id="monthYearDisplay"></div>
+        <div class="month-navigation">
+            <button id="prevMonthBtn" onclick="changeMonth(-1)">Previous month</button>
+            <button id="nextMonthBtn" onclick="changeMonth(1)">Next month</button>
+        </div>
+    </div>
+    <label for="datepicker">Choose a date: </label>
+    <input type="text" id="datepicker" readonly>
+    <div id="calendar"></div>
+</div>
+
+<table class="session-row" id="sessionsTable">
+    <thead>
+        <!-- Header is dynamially generated -->
+    </thead>
+    <tbody>
+        <!-- Sessions for the selected date are dynamically added here -->
+    </tbody>
+</table>
+
+@section Scripts
+{
+    <script>
+        let currentMonthOffset = 0; // 0 represents the current month, -1 for the previous month, 1 for the next month
+        let datePickerInput;
+        let calendarContainer;
+
+        const monthYearDisplay = document.getElementById("monthYearDisplay");
+        const prevMonthBtn = document.getElementById("prevMonthBtn");
+        const nextMonthBtn = document.getElementById("nextMonthBtn");
+
+        document.addEventListener("DOMContentLoaded", function () 
+        {
+            datePickerInput = document.getElementById("datepicker");
+            calendarContainer = document.getElementById("calendar");
+            const sessionsTableHeader = document.getElementById("sessionsTable").getElementsByTagName("thead")[0];
+
+            datePickerInput.addEventListener("focus", function () 
+            {
+                calendarContainer.style.display = "block";
+            });
+
+            datePickerInput.addEventListener("blur", function () 
+            {
+                setTimeout(() => { calendarContainer.style.display = "none";}, 200);
+            });
+
+            calendarContainer.addEventListener("click", function (event) 
+            {
+                if (event.target.tagName === "TD" && event.target.classList.contains("clickable")) 
+                {
+                    const selectedDate = event.target.dataset.date;
+                    datePickerInput.value = formatDate(selectedDate);
+                    updateTrackSessions(selectedDate);
+                    updateTableHeader(selectedDate);
+                    calendarContainer.style.display = "none";
+                }
+            });
+
+            generateCalendar();
+        });
+
+        function generateCalendar() 
+        {
+            const calendarContainer = document.getElementById("calendar");
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear();
+            const currentMonth = currentDate.getMonth() + currentMonthOffset;
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
+            const today = currentDate.getDate();
+
+            monthYearDisplay.textContent = `${getMonthName(currentMonth)} ${currentYear}`;
+
+            let tableHtml = "<table>";
+            tableHtml += "<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr><tr>";
+
+            let dayCounter = 1;
+            const daysInWeek = 7;
+            const offset = (firstDayOfMonth - 1 + daysInWeek) % daysInWeek; // Adjusted to make monday the first day pf the week
+
+            for (let i = 0; i < 42; i++) 
+            {
+                const dateInCurrentMonth = i >= offset && dayCounter <= daysInMonth;
+                const date = dateInCurrentMonth ? dayCounter : '';
+                const clickable = dateInCurrentMonth ? 'clickable' : 'disabled';
+                const isToday = date === today && currentMonthOffset === 0;
+                const isPastDay = currentMonthOffset === 0 && date < today;
+
+                if (dateInCurrentMonth) 
+                {
+                    const paddedMonth = (currentMonth + 1).toString().padStart(2, '0');
+                    const paddedDay = dayCounter.toString().padStart(2, '0');
+                    const formattedDate = `${currentYear}-${paddedMonth}-${paddedDay}`;
+                    tableHtml += `<td class="${clickable} ${isToday ? 'today' : ''} ${isPastDay ? 'disabled' : ''}" data-date="${formattedDate}">${date}</td>`;
+                    dayCounter++;
+                } 
+                else 
+                {
+                    tableHtml += `<td class="${clickable}"></td>`;
+                }
+
+                if ((i + 1) % daysInWeek === 0) 
+                {
+                    tableHtml += "</tr><tr>";
+                }
+            }
+
+            tableHtml += "</tr></table>";
+            calendarContainer.innerHTML = tableHtml;
+
+            // Attach event listener to clickable cells
+            const clickableCells = calendarContainer.getElementsByClassName('clickable');
+            for (let cell of clickableCells) {
+                cell.addEventListener('click', handleCalendarCellClick);
+            }
+
+            // Disable "Previous month" button if current month
+            prevMonthBtn.disabled = currentMonthOffset === 0;
+
+            // Disable "Next month" button if beyond next month
+            nextMonthBtn.disabled = currentMonthOffset > 0;
+        }
+
+        function updateTableHeader(selectedDate) 
+        {
+            const sessionsTableHeader = document.getElementById("sessionsTable").getElementsByTagName("thead")[0];
+            sessionsTableHeader.innerHTML = `
+                <tr>
+                    <th colspan="5" style="text-align: center;" class="day-name" id="sessionsTableDayName">Sessions for ${getDayName(selectedDate)} ${formatDate(selectedDate)}</th>
+                </tr>
+                <tr>
+                    <th>Start time</th>
+                    <th>End time</th>
+                    <th>Max cars allowed</th>
+                    <th>Available spots</th>
+                    <th>Make a reservation</th>
+                </tr>`;
+        }
+
+        async function updateTrackSessions(selectedDate) 
+        {
+            // Fetch sessions for the selected date
+            try 
+            {
+                const response = await fetch(`/api/track-sessions/for-day?selectedDate=${selectedDate}`);
+                const trackSessions = await response.json();
+
+                // Fetch user reservations
+                const userReservationsResponse = await fetch('/Account/Reservation/UserReservations');
+                const userReservations = await userReservationsResponse.json();
+
+                // Clear existing sessions in the table body
+                const sessionsTableBody = document.getElementById("sessionsTable").getElementsByTagName("tbody")[0];
+                sessionsTableBody.innerHTML = "";
+
+                // Display sessions for the selected date
+                const halfLength = Math.ceil(trackSessions.length);
+
+                if (halfLength > 0) 
+                {
+                    trackSessions.slice(0, halfLength).forEach(function (session) 
+                    {
+                        const startTime = new Date(session.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                        const endTime = new Date(session.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                        // Check if the session is in the past
+                        const isPastSession = new Date(session.startTime) < new Date();
+
+                        // Check if the user has a reservation for this track session
+                        const hasReservation = userReservations.some(reservation => reservation.trackSessionId === session.trackSessionId);
+
+                        sessionsTableBody.innerHTML += `
+                                    <tr class="${isPastSession ? 'past-session' : ''}">
+                                        <td>${startTime}</td>
+                                        <td>${endTime}</td>
+                                        <td>${session.maxCarsAllowed}</td>
+                                        <td>${session.availableSpots}</td>
+
+                                        <td>
+                                            ${hasReservation ?
+                                                `<span>You already have a reservation.</span>` :
+                                                (session.availableSpots > 0 && !isPastSession ?
+                                                    `<form action="/Account/Reservation" method="get">
+                                                                        <input type="hidden" name="trackSessionId" value="${session.trackSessionId}" />
+                                                                        <button type="submit" class="btn btn-primary">Reserve</button>
+                                                                    </form>` :
+                                                    `<span>${isPastSession ? 'Past track session.' : 'No available spots'}</span>`
+                                                )
+                                            }
+                                        </td>
+                                    </tr>`;
+                    });
+                } 
+                else 
+                {
+                    // Display a row with a message when no track sessions are available for the day
+                    sessionsTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="5" style="text-align: center;">No track sessions for this day.</td>
+                        </tr>`;
+                }
+            } 
+            catch (error) 
+            {
+                console.error("Error fetching track sessions:", error);
+            }
+        }
+
+
+        function formatDate(dateString) 
+        {
+            const [year, month, day] = dateString.split("-");
+            return `${day}.${month}.${year}`;
+        }
+
+        function changeMonth(offset) 
+        {
+            currentMonthOffset += offset;
+            generateCalendar();
+        }
+
+        function handleCalendarCellClick(event) 
+        {
+            const selectedDate = event.target.dataset.date;
+
+            if (datePickerInput) 
+            {
+                datePickerInput.value = formatDate(selectedDate);
+            }
+
+            updateTrackSessions(selectedDate);
+            updateTableHeader(selectedDate);
+            calendarContainer.style.display = "none";
+        }
+
+        function getMonthName(monthIndex) 
+        {
+            const months = [
+                "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ];
+            return months[monthIndex];
+        }
+
+        function getDayName(dateString) 
+        {
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const date = new Date(dateString);
+            return days[date.getDay()];
+        }
+    </script>
+}

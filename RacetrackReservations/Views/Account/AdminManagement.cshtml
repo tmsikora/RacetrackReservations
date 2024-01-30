@@ -1,0 +1,82 @@
+﻿@model RacetrackReservations.ViewModels.AdminManagementViewModel
+
+@{
+    ViewBag.Title = "Admin management";
+}
+
+<h2>Admin management</h2>
+
+<br />
+<div>
+    <a class="btn btn-primary" asp-controller="Account" asp-action="ManageTrackSessions">Manage track sessions</a>
+</div>
+
+<br />
+<h4>List of users</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>First name</th>
+            <th>Last name</th>
+            <th>Email</th>
+            <th>Is admin?</th>
+            <th colspan="4"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model.Users)
+        {
+            <tr>
+                <td>@user.FirstName</td>
+                <td>@user.LastName</td>
+                <td>@user.Email</td>
+                <td>@user.IsAdmin</td>
+                <td>
+                    @using (Html.BeginForm("ManageUserData", "Account", new { userId = user.Id }, FormMethod.Post))
+                    {
+                        <button id="manageUserDatasBtn" type="submit" class="btn btn-primary">Manage user data</button>
+                    }
+                </td>
+                <td>
+                    @if (user.Email != User.Identity.Name)
+                    {
+                        @using (Html.BeginForm("Delete", "Account", new { userId = user.Id }, FormMethod.Post))
+                        {
+                            <button id="deleteUserBtn" type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this user?');">Delete user</button>
+                        }
+                    }
+                    else
+                    {
+                        <button id="deleteUserBtn" type="button" class="btn btn-danger" disabled>Delete user</button>
+                    }
+                </td>
+                <td>
+                    @if (user.Email != User.Identity.Name && user.IsAdmin == false)
+                    {
+                        @using (Html.BeginForm("MakeAdmin", "Account", new { userId = user.Id }, FormMethod.Post))
+                        {
+                            <button id="makeAdminBtn" type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to make this user an admin?');">Make admin</button>
+                        }
+                    }
+                    else if (user.Email != User.Identity.Name)
+                    {
+                        @using (Html.BeginForm("RevokeAdmin", "Account", new { userId = user.Id }, FormMethod.Post))
+                        {
+                            <button id="revokeAdminBtn" type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to revoke admin status from this user?');">Revoke admin</button>
+                        }
+                    }
+                    else
+                    {
+                        <button id="revokeAdminBtn" type="button" class="btn btn-warning" disabled>Revoke admin</button>
+                    }
+                </td>
+                <td>
+                    @using (Html.BeginForm("ManageUserReservations", "Account", new { userId = user.Id }, FormMethod.Post))
+                    {
+                        <button id="manageUserReservationsBtn" type="submit" class="btn btn-primary">Manage reservations</button>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

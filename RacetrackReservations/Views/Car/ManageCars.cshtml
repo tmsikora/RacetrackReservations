@@ -1,0 +1,68 @@
+﻿@model RacetrackReservations.ViewModels.MyAccountViewModel
+
+@{
+    ViewData["Title"] = "Manage cars";
+}
+
+<div>
+    <a class="btn btn-info" asp-controller="Account" asp-action="MyAccount">Go back</a>
+</div>
+<br />
+
+<h2>Manage your cars</h2>
+
+<br />
+<div>
+    <p><strong>First name:</strong> @Model.FirstName</p>
+    <p><strong>Last name:</strong> @Model.LastName</p>
+    <p><strong>Email:</strong> @Model.Email</p>
+</div>
+
+<br />
+<h4>Your cars</h4>
+
+<div>
+    <a class="btn btn-success" asp-controller="Car" asp-action="AddCar">Add a new car</a>
+</div>
+
+<br />
+@if (Model.Cars.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Brand</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>Fire extinguisher</th>
+                <th>Rollcage</th>
+                <th colspan="2"></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var car in Model.Cars)
+            {
+                <tr>
+                    <td>@car.Brand</td>
+                    <td>@car.ModelName</td>
+                    <td>@car.Year</td>
+                    <td>@(car.HasFireExtinguisher ? "Yes" : "No")</td>
+                    <td>@(car.HasRollcage ? "Yes" : "No")</td>
+                    <td>
+                        <a class="btn btn-primary" asp-controller="Car" asp-action="EditCar" asp-route-carId="@car.CarId">Edit car</a>
+                    </td>
+                    <td>
+                        @using (Html.BeginForm("DeleteCar", "Car", new { carId = car.CarId, userId = car.UserId }, FormMethod.Post))
+                        {
+                            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this car?');">Delete car</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No cars found for this user.</p>
+}

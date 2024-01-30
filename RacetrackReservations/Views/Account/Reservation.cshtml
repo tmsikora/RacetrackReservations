@@ -1,0 +1,124 @@
+﻿@model RacetrackReservations.ViewModels.ReservationViewModel
+@using Microsoft.AspNetCore.Antiforgery
+@inject IAntiforgery Antiforgery
+
+@{
+    ViewBag.Title = "Reservation";
+}
+
+<div>
+    <a class="btn btn-info" asp-controller="Account" asp-action="TrackSessionBrowser">Go back</a>
+</div>
+<br />
+
+@using (Html.BeginForm("ConfirmReservation", "Reservation", FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+
+    <div>
+        <input type="hidden" id="trackSessionId" asp-for="TrackSessionId" />
+        <input type="hidden" id="email" asp-for="Email" value="@User.Identity.Name" />
+        <input type="hidden" id="withInstructor" asp-for="WithInstructor" />
+    </div>
+
+    <h2>Reservation details</h2>
+
+    <br />
+    <div id="trackSessionDetails">
+        <!-- Track session details will be displayed here -->
+    </div>
+
+    <br />
+    <h4>Your track experience</h4>
+    <div id="messageContainer"></div>
+    <br />
+
+    <div>
+        <label for="withInstructorPicker">Do you want to drive with a race instructor?  </label>
+        <select id="withInstructorPicker" name="WithInstructor">
+            <option value="true" selected>Yes</option>
+            <option value="false">No</option>
+        </select>
+    </div>
+
+    <br />
+    <button id="confirmReservationBtn" type="submit" class="btn btn-success" onclick="confirmReservation()">Confirm reservation</button>
+}
+
+@section Scripts 
+{
+    <script>
+        // Function to be called when "Confirm Reservation" button is pressed
+        function confirmReservation() 
+        {
+            // Set the WithInstructor value based on the selected option in the dropdown
+            var withInstructorPicker = document.getElementById('withInstructorPicker');
+            var withInstructorValue = withInstructorPicker.value;
+
+            // Update the hidden input with the selected WithInstructor value
+            document.getElementById('withInstructor').value = withInstructorValue;
+
+            // Submit the form
+            document.forms["reservationForm"].submit();
+        }
+
+
+        // Extract trackSessionId from the query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const trackSessionId = urlParams.get('trackSessionId');
+
+        // Set the trackSessionId in the hidden input
+        document.getElementById('trackSessionId').value = trackSessionId;
+
+        // Fetch track session details based on trackSessionId
+        fetch(`/api/track-sessions/details/${trackSessionId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(trackSession => {
+                // Display track session details
+                const trackSessionDetails = document.getElementById('trackSessionDetails');
+                const startDate = new Date(trackSession.startTime);
+                const endDate = new Date(trackSession.endTime);
+
+                trackSessionDetails.innerHTML = `
+                            <p><strong>Date:</strong> ${startDate.toLocaleDateString()}</p>
+                            <p><strong>Start time:</strong> ${startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p><strong>End time:</strong> ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            <p><strong>Max cars allowed:</strong> ${trackSession.maxCarsAllowed}</p>
+                            <p><strong>Available spots:</strong> ${trackSession.availableSpots}</p>
+                            <!-- Add more details as needed -->
+                        `;
+
+                // Fetch user details to get NumberOfLapsWithInstructor
+                fetch(`/api/user-details`)
+                    .then(userResponse => {
+                        if (!userResponse.ok) {
+                            throw new Error(`HTTP error! Status: ${userResponse.status}`);
+                        }
+                        return userResponse.json();
+                    })
+                    .then(userDetails => {
+                        // Dropdown for choosing WithInstructor value
+                        const withInstructorPicker = document.getElementById('withInstructorPicker');
+
+                        // Check the dropdown based on NumberOfLapsWithInstructor
+                        if (userDetails && userDetails.numberOfLapsWithRaceInstructor < 10) {
+                            withInstructorPicker.value = "true";
+                            withInstructorPicker.disabled = true;
+                            messageContainer.innerHTML = `<p>Number of laps completed with race instructor: ${userDetails.numberOfLapsWithRaceInstructor}<br>(Race Instructor required for at least 10 laps)</p>`;
+                        }
+                        else {
+                            withInstructorPicker.value = "false";
+                            withInstructorPicker.disabled = false;
+                            messageContainer.innerHTML = `<p>Number of laps completed with race instructor: ${userDetails.numberOfLapsWithRaceInstructor}</p>`;
+                        }
+                    })
+                    .catch(error => console.error("Error fetching user details:", error));
+            })
+            .catch(error => console.error("Error fetching track session details:", error));
+    </script>
+}

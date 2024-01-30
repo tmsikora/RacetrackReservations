@@ -1,0 +1,63 @@
+﻿@model RacetrackReservations.ViewModels.ManageAccountViewModel
+
+@{
+    ViewBag.Title = "Manage user's data";
+
+    string FormatMillisecondsToTime(int milliseconds)
+    {
+        var timeSpan = TimeSpan.FromMilliseconds(milliseconds);
+        return $"{(int)timeSpan.TotalMinutes:D2}:{timeSpan.Seconds:D2}:{timeSpan.Milliseconds:D3}";
+    }
+}
+
+<div>
+    <a class="btn btn-info" asp-controller="Account" asp-action="AdminManagement">Go back</a>
+</div>
+<br />
+
+<h2>Manage user's data</h2>
+
+<br />
+<div>
+    <p><strong>First name:</strong> @Model.FirstName</p>
+    <p><strong>Last name:</strong> @Model.LastName</p>
+    <p><strong>Email:</strong> @Model.Email</p>
+    <p><strong>Number of laps with race instructor:</strong> @Model.NumberOfLapsWithRaceInstructor</p>
+    <p><strong>Best lap time:</strong> @FormatMillisecondsToTime(Model.BestTime)</p>
+</div>
+
+<br />
+<h4>Update user's data</h4>
+
+@using (Html.BeginForm("UpdateUserData", "Account", new { userEmail = Model.Email }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+
+    <div>
+        @Html.LabelFor(model => model.FirstName)
+        @Html.TextBoxFor(model => model.FirstName, new { @class = "form-control" })
+    </div>
+
+    <div>
+        @Html.LabelFor(model => model.LastName)
+        @Html.TextBoxFor(model => model.LastName, new { @class = "form-control" })
+    </div>
+
+    <div>
+        @Html.LabelFor(model => model.Email)
+        @Html.TextBoxFor(model => model.Email, new { @class = "form-control" })
+    </div>
+
+    <div>
+        <label>Number of laps with race instructor</label>
+        @Html.TextBoxFor(model => model.NumberOfLapsWithRaceInstructor, new { @class = "form-control" })
+    </div>
+
+    <div>
+        <label>Best lap time [ms]</label>
+        @Html.TextBoxFor(model => model.BestTime, new { @class = "form-control" })
+    </div>
+
+    <br />
+    <button type="submit" class="btn btn-success">Update account</button>
+}

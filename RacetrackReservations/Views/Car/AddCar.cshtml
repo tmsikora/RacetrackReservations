@@ -1,0 +1,68 @@
+﻿@model RacetrackReservations.ViewModels.CarViewModel
+
+@{
+    ViewBag.Title = "Add a new car";
+}
+
+<div>
+    <a class="btn btn-info" onclick="history.back();">Go back to Manage Cars</a>
+</div>
+<br />
+
+<h2>Add a new car</h2>
+
+@using (Html.BeginForm("AddNewCar", "Car", FormMethod.Post, new { id = "addCarForm" }))
+{
+    <div>
+        <input type="hidden" id="userId" asp-for="UserId" value="@User.Identity.Name" />
+    </div>
+
+    <div>
+        @Html.LabelFor(model => model.Brand)
+        @Html.TextBoxFor(model => model.Brand, new { @class = "form-control", required = "required" })
+    </div>
+
+    <div>
+        @Html.LabelFor(model => model.ModelName)
+        @Html.TextBoxFor(model => model.ModelName, new { @class = "form-control", required = "required" })
+    </div>
+
+    <div>
+        @Html.LabelFor(model => model.Year)
+        @Html.TextBoxFor(model => model.Year, new { @class = "form-control", required = "required" })
+    </div>
+
+    <br />
+    <div>
+        <label>
+            Does it have a rollcage?
+            @Html.CheckBoxFor(model => model.HasRollcage)
+        </label>
+    </div>
+
+    <div>
+        <label>
+            Does it have a fire extinguisher?
+            @Html.CheckBoxFor(model => model.HasFireExtinguisher, new { @id = "fireExtinguisherCheckbox" })
+        </label>
+    </div>
+
+    <br />
+    <button type="submit" class="btn btn-success" id="addCarButton" disabled>Add car</button>
+}
+
+@section Scripts
+{
+    <script>
+        // JavaScript function to go back to the previous page
+        function goBack() {
+            window.history.back();
+        }
+
+        // Disable the "Add car" button if the checkbox is not checked
+        document.getElementById('fireExtinguisherCheckbox').addEventListener('change', function () {
+            var addButton = document.getElementById('addCarButton');
+            addButton.disabled = !this.checked;
+        });
+    </script>
+}

@@ -1,0 +1,69 @@
+﻿@model RacetrackReservations.ViewModels.ManageTrackSessionsViewModel
+
+@{
+    ViewBag.Title = "Manage track sessions";
+}
+
+<div>
+    <a class="btn btn-info" asp-controller="Account" asp-action="AdminManagement">Go back</a>
+</div>
+<br />
+
+<h2>Manage track sessions</h2>
+
+<br />
+<form asp-controller="TrackSession" asp-action="GenerateTrackSessions" method="post" id="trackSessionForm">
+    <div class="form-group">
+        <label asp-for="SelectedDate">Choose a date:</label>
+        <input asp-for="SelectedDate" class="form-control" type="date" min="@DateTime.Now.ToString("yyyy-MM-dd")" onchange="checkTrackSessionsExist()" />
+        <span asp-validation-for="SelectedDate" class="text-danger"></span>
+    </div>
+
+    <br />
+    <p id="trackSessionsExistMessage" class="text-warning" style="display: none;">Track sessions already exist for the selected date.</p>
+    <button type="submit" class="btn btn-success" disabled>Generate track sessions</button>
+</form>
+
+@section Scripts
+{
+    <script>
+        function checkTrackSessionsExist() {
+            var selectedDate = document.getElementById("SelectedDate").value;
+
+            // Use the fetch API to check if track sessions exist for the selected date
+            fetch(`/api/track-sessions/for-day?selectedDate=${selectedDate}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    var trackSessionsExist = data && data.length > 0; // Check if track sessions exist
+
+                    var trackSessionsExistMessage = document.getElementById("trackSessionsExistMessage");
+                    var generateButton = document.querySelector("#trackSessionForm button[type='submit']");
+
+                    if (trackSessionsExist) 
+                    {
+                        trackSessionsExistMessage.style.display = "block";
+                        generateButton.disabled = true;
+                    } 
+                    else 
+                    {
+                        trackSessionsExistMessage.style.display = "none";
+                        generateButton.disabled = false;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking track sessions existence:', error);
+                });
+        }
+    </script>
+}

@@ -1,0 +1,78 @@
+﻿@model RacetrackReservations.ViewModels.MyAccountViewModel
+
+@{
+    ViewBag.Title = "My account";
+
+    string FormatMillisecondsToTime(int milliseconds)
+    {
+        var timeSpan = TimeSpan.FromMilliseconds(milliseconds);
+        return $"{(int)timeSpan.TotalMinutes:D2}:{timeSpan.Seconds:D2}:{timeSpan.Milliseconds:D3}";
+    }
+}
+
+<style>
+    .past-session {
+        color: #888888; /* Grey color for past sessions */
+    }
+</style>
+
+<h2>My account</h2>
+
+<br />
+<div>
+    <p><strong>First name:</strong> @Model.FirstName</p>
+    <p><strong>Last name:</strong> @Model.LastName</p>
+    <p><strong>Email:</strong> @Model.Email</p>
+    <p><strong>Number of laps with race instructor:</strong> @Model.NumberOfLapsWithRaceInstructor</p>
+    <p><strong>Best lap time:</strong> @FormatMillisecondsToTime(Model.BestTime)</p>
+</div>
+
+<div>
+    <a class="btn btn-primary" asp-controller="Account" asp-action="ManageAccount">Manage account</a>
+    <a class="btn btn-primary" asp-controller="Car" asp-action="ManageCars" asp-route-userId="@Model.Id">Manage cars</a>
+</div>
+
+<br />
+<h4>Your Reservations for track sessions</h4>
+
+@if (Model.Reservations.Any())
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Reservation ID</th>
+                <th>With race instructor?</th>
+                <th>Date</th>
+                <th>Start time</th>
+                <th>End time</th>
+                <th>Max cars allowed</th>
+                <th>Still available spots</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reservation in Model.Reservations)
+            {
+                <tr class="@((reservation.StartTime < DateTime.Now) ? "past-session" : "")">
+                    <td>@reservation.ReservationId</td>
+                    <td>@(reservation.WithInstructor ? "Yes" : "No")</td>
+                    <td>@reservation.StartTime.ToString("dd.MM.yyyy")</td>
+                    <td>@reservation.StartTime.ToString("HH:mm")</td>
+                    <td>@reservation.EndTime.ToString("HH:mm")</td>
+                    <td>@reservation.MaxCarsAllowed</td>
+                    <td>@reservation.AvailableSpots</td>
+                    <td>
+                        @using (Html.BeginForm("Delete", "Reservation", new { reservationId = reservation.ReservationId }, FormMethod.Post))
+                        {
+                            <button id="deleteReservationBtn" type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this reservation?');" @((reservation.StartTime < DateTime.Now) ? "disabled" : "")>Delete reservation</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>No reservations found.</p>
+}
